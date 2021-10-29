@@ -1,0 +1,125 @@
+a=0
+show_actif_module()
+{
+		echo "List of Active kernel modules on This PC "
+		cat -n /proc/modules
+}
+
+show_non_actif_module()
+{
+		echo "---------- Deactivated Kernel Modules ----------"
+		cat -n ~/deactivated.txt
+}
+
+deactivate_module()
+{
+		echo "Choose the number of the module you want to disable "
+		read line_number
+		pass=$(sed -n $line_number"p" /proc/modules)
+		module=$(cut -d" " -f1 <<<"$pass")
+		echo $module >> ~/deactivated.txt
+		sudo modprobe -r $module
+		echo "$module is now disabled"
+
+}
+reactivate_module()
+{
+		echo "Choose the number of the module you want to anable "
+		read line_number
+		pass=$(sed -n $line_number"p" ~/deactivated.txt)
+		sudo modprobe $pass
+		sed -i $line_number"d" ~/deactivated.txt
+
+}
+
+# main function
+until false
+do
+echo "  ########################################################################"
+echo "  #                                                                      #"
+echo "  #                -------------CHOOSE AN OPTION -------------           #"
+echo "  #                                                                      #"
+echo "  #                    press 1 to list all users name                    #"
+echo "  #                    press 2 to know if you are protected              #"
+echo "  #                    press 3 delete a Module                           #"
+echo "  #                    press 4 to Reactivate a Module                    #"
+echo "  #                    press 5 to Shut Down the PC                       #"
+echo "  #                    press 6 to Reboot the PC                          #"
+echo "  #                    press 7 to exit program                           #"
+echo "  #                                                                      #"
+echo "  ########################################################################"
+read a
+clear
+echo "                     your chose option N° $a                            "
+echo " "
+case $a in
+	1 )
+	cut -d: -f1 /etc/passwd
+	u=$(whoami)
+	echo "your current user is $u"
+
+	;;
+	2 )
+	u=$(whoami)
+	pass=$(grep "$u:" /etc/passwd)
+	pas=$(cut -d: -f2 <<<"$pass")
+	if pas==x; then
+		echo "$u is protected by a Password"
+	else
+		echo "$u is not protected by a Password"
+	fi
+	;;
+
+	3 )
+	show_actif_module
+	deactivate_module
+	;;
+
+	4 )
+			if [ -s ~/deactivated.txt ]; then
+        # The file is not-empty.
+				show_non_actif_module
+				reactivate_module
+			else
+        echo "there's no Module to activate it's all good"
+fi
+
+	;;
+
+	5)
+	echo "Are you sure you want to shutdown your PC"
+	echo "[y/n] insert y  to confirm"
+	read choice
+	if [ "$choice" == "y" ] ; then
+		echo " ********** WARNING : SHUTTING DOWN THE PC ********** "
+		init 0
+		shutdown -h now
+		halt
+		poweroff
+	else
+		echo "          ********** Cancelling shutdown ********* "
+		echo "          ********** shutdown Cancelled ********** "
+	fi
+
+	;;
+	6)
+	echo "Are you sure you want to reboot your PC"
+	echo "[y/n] insert y  to confirm"
+	read choice
+	if [ "$choice" == "y" ] ; then
+		echo " ********** WARNING : REBOOTING THE PC RIGHTNOW ********** "
+		init 6
+		shutdown -h now
+		reboot
+	else
+			echo "          ********** Cancelling reboot********** "
+			echo "          ********** reboot Cancelled ********** "
+	fi
+
+	;;
+	7 )
+	echo "EXITING ........ "
+	break
+esac
+echo ""
+done
